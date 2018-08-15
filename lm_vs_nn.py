@@ -45,10 +45,10 @@ def loo_cv(mod, data):
 		train = data[data.trend != i]
 
 # Estimate WLS and return RMSE
-def felm_rmse(y, X, weights, test_data):
+def felm_rmse(y, X, weights, X_test, y_test):
     mod = sm.WLS(y, X, weights = weights).fit()
-    pred = mod.predict(test_data)
-    res = (np.array(y[['ln_corn_yield']]) - np.array(pred))**2
+    pred = mod.predict(X_test)
+    res = (np.array(y_test) - np.array(pred))**2
     return np.sqrt(np.mean(res))
     
 def nnetwork_rmse(y, X, test_data):
@@ -65,9 +65,10 @@ def nnetwork_rmse(y, X, test_data):
     nn_pred = ksmod.predict(test_data)
     
     # Get RMSE
-    nn_res = (np.array(y[['ln_corn_yield']] - np.array(nn_pred))**2
+    nn_res = (np.array(y[['ln_corn_yield']]) - np.array(nn_pred))**2
     return np.sqrt(np.mean(nn_res))
-     
+
+
 # Load data from build_data.py
 cropdat = pd.read_pickle('/Users/john/Projects/corn_yield_pred/data/full_data.pickle')
 
@@ -81,7 +82,7 @@ fe = pd.get_dummies(cropdat.fips)
 X = pd.DataFrame(np.hstack((X, fe)))
 
 # Get RMSE
-baseline_rmse = felm_rmse(y, X, weights = cropdat[['corn_acres']], test_data = X)
+baseline_rmse = felm_rmse(y, X, weights = cropdat[['corn_acres']], X_test = X, y_test = y)
 baseline_rmse
 
 #---------------------------------
