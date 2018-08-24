@@ -171,24 +171,6 @@ cropdat = pd.read_pickle('data/full_data.pickle')
 regdat = cropdat[['ln_corn_yield', 'dday0_10C', 'dday10_30C', 'dday30C', 'prec', 'prec_sq', 'trend', 'trend_sq']]
 regdat = demean_values(regdat, cropdat.fips)
 
-#tset = gc_kfold_cv(regdat, cropdat['trend'], i, i + 4)
-#y_train = tset[1].ln_corn_yield
-#X_train = tset[1].drop(['ln_corn_yield'], 1)
-        
-#y_test = tset[2].ln_corn_yield
-#X_test = tset[2].drop(['ln_corn_yield'], 1)
-                    
-# Scale data based on train set
-#sc = StandardScaler()
-#X_scale = sc.fit(X_train)
-#X_train = X_scale.transform(X_train)
-#X_test = X_scale.transform(X_test)
-                    
-                    # Array y train, test
-#y_train = np.array(y_train).reshape(-1, 1)
-#y_test = np.array(y_test).reshape(-1, 1)
-                    
-
 ep = []
 rmse = []
 tstat = []
@@ -202,7 +184,7 @@ for i, val in enumerate(range(1, 2), 1):
     rmse.append(nn_rmse)
     se.append(nn_se)
     tstat.append(nn_tstat)
-    batch.append(100)
+    batch.append(50)
     
 #out = nnetwork_rmse(y_train, X_train, y_test, X_test, epochs = 1, batch_size = 1)
 ffdat = {'Epochs': ep,
