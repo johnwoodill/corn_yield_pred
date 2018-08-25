@@ -23,28 +23,31 @@ print("Defining functions......")
 
 def felm_rmse(y, X, weights, y_test, X_test):
     """
-    Estimate WLS and return tuple: RMSE and ttest of test and train residuals
+    Estimate WLS from y, X, predict using X_test, calculate RMSE,
+    and test whether residuals are independent.
 
-    Keyword arguments:
-    ------------------
-    y:        Dep variable - Full or training data
-    X:        Covariates - Full or training data
-    weights:  Weights for WLS
-    y_test:   Dep variable - test data
-    X_test:   Covariates - test data
+    Arguments:
+        y: Dep variable - Full or training data
+        X: Covariates - Full or training data
+        weights: Weights for WLS
+        y_test: Dep variable - test data
+        X_test: Covariates - test data
+
+    Returns:
+        Returns tuple with RMSE and tstat from ttest
     """
     # Fit model and get predicted values of test data
-    mod = sm.WLS(y, X, weights = weights).fit()
+    mod = sm.WLS(y, X, weights=weights).fit()
     pred = mod.predict(X_test)
-    
-    # Get residuals from test data
+
+    #Get residuals from test data
     res = (y_test[:] - pred.values)
 
-    # Calculate ttest to check that residuals from test and train are independent
+    # Calculate ttest to check residuals from test and train are independent
     t_stat, p_val = stats.ttest_ind(mod.resid, res, equal_var=False)
 
     # Return RMSE and t-stat from ttest
-    return (np.sqrt(np.mean(res**2)), t_stat)  
+    return (np.sqrt(np.mean(res**2)), t_stat) 
     
 
 def nnetwork_rmse(y, X, y_test, X_test):
@@ -97,7 +100,7 @@ def gc_kfold_cv(data, group, begin, end):
     end:      end of cluster
     """
     # Get group data
-    data['group'] = group
+    data = data.assign(group=group.values)
     
     # Filter test and train based on begin and end
     test = data[data['group'].isin(range(begin, end))]
@@ -116,21 +119,23 @@ def gc_kfold_cv(data, group, begin, end):
 
 def felm_cv(regdata, group):
     """
-    Cross-validate WLS FE model and return RMSE and ttstat from ttest
+    Cross-validate WLS FE model
 
-    Keyword arguments:
-    ------------------
-    regdata:  regression data
-    group:    group fixed effect
+    Arguments:
+        regdata:  regression data
+        group:    group fixed effect
+
+    Returns:
+        return mean RMSE, standard error, and mean tstat from ttest
     """
     # Loop through 1-31 years with 5 groups in test set and 26 train set
     i = 1
-    l = False
+    j = False
     retrmse = []
     rettstat = []
-    while (l == False):
+    while j == False:
         # Get test and training data
-        tset = gc_kfold_cv(regdat, group, i, i + 4)
+        tset = gc_kfold_cv(regdata, group, i, i + 4)
         
         # Separate y_train, X_train, y_test, X_test, and weights
         y_train = tset[1].ln_corn_yield
@@ -149,7 +154,7 @@ def felm_cv(regdata, group):
         # If end of loop return mean RMSE, s.e., and tstat
         if i == 27:
             return(np.mean(retrmse), np.std(retrmse), np.mean(t_stat))
-            l = True
+            j = True
 
         # If not end of loop increase one
         i += 1
@@ -166,17 +171,17 @@ def nn_cv(regdata, group):
     """
     # Loop through 1-31 years with 5 groups in test set and 26 train set
     i = 1
-    l = False
+    j = False
     retrmse = []
     rettstat = []
     nn_rmse = 0
     nn_tstat = 0
-    while (l == False):
+    while j == False:
         print("Estimating NN CV:", i)
         print("Previous RMSE: ", nn_rmse, "Previous t-stat: ", nn_tstat)
 
         # Get train and test data
-        tset = gc_kfold_cv(regdat, group, i, i + 4)
+        tset = gc_kfold_cv(regdata, group, i, i + 4)
         
         # Separate train and test data
         y_train = tset[1].ln_corn_yield
@@ -205,7 +210,7 @@ def nn_cv(regdata, group):
         # If end of loop, return mean RMSE, s.e., and tstat
         if i == 27:
             return(np.mean(retrmse), np.std(retrmse), np.mean(rettstat))
-            l = True
+            j = True
         i += 1
 
 
@@ -280,7 +285,7 @@ print("Neural Network: ", nn_rmse, "(RMSE)", nn_tstat, "(t-stat)")
 print("------------------------------------------------------ ")
 
 # Plot
-rrmse = np.array([fdat['change'].iloc[1], fdat['change'].iloc[2]])
+rrmse = np.array([fdat['change'].iloc[1]*-1, fdat['change'].iloc[2]*-1])
 plt.rcdefaults()
 fig, ax = plt.subplots()
 ax = ax.bar(['FE Model', 'NN Model'], rrmse)
