@@ -60,46 +60,26 @@ def main():
     regdat = pd.concat([dddat, fe_group], axis=1)
     ddreg_rmse, ddreg_se, ddreg_tstat = felm_cv(regdat, cropdat['trend'])
 
+    print("Estimating Degree Day Regression with State Trends")
+    sdat = cropdat[['ln_corn_yield', 'dday0_10C', 'dday10_30C', 'dday30C',
+                     'prec', 'prec_sq', 'IOWA_trend', 'INDIANA_trend',
+                     'ILLINOIS_trend', 'IOWA_trend_sq', 'INDIANA_trend_sq',
+                     'ILLINOIS_trend_sq', 'corn_acres']]
+    fe_group = pd.get_dummies(cropdat.fips)
+    regdat = pd.concat([sdat, fe_group], axis=1)
+    ddreg_st_rmse, ddreg_st_se, ddreg_st_tstat = felm_cv(regdat, cropdat['trend'])
+
     # Get results as data.frame
-    fdat = {'Regression': ['Baseline', 'Degree Day',],
-            'RMSE': [base_rmse, ddreg_rmse],
-            'se': [base_se, ddreg_se],
-            't-stat': [base_tstat, ddreg_tstat]}
+    fdat = {'Regression': ['Baseline', 'Degree Day', 'Degree Day - State Trend'],
+            'RMSE': [base_rmse, ddreg_rmse, ddreg_st_rmse],
+            'se': [base_se, ddreg_se, ddreg_st_se],
+            't-stat': [base_tstat, ddreg_tstat, ddreg_st_tstat]}
 
     fdat = pd.DataFrame(fdat, columns=['Regression', 'RMSE', 'se', 't-stat'])
 
     # Calculate percentage change
     fdat['change'] = (fdat['RMSE'] - fdat['RMSE'].iloc[0])/fdat['RMSE'].iloc[0]
     return fdat
-
-
-def felm_rmse(y_train, x_train, weights, y_test, x_test):
-    """
-    Estimate WLS from y_train, x_train, predict using x_test, calculate RMSE,
-    and test whether residuals are independent.
-
-    Arguments:
-        y_train: Dep variable - Full or training data
-        x_train: Covariates - Full or training data
-        weights: Weights for WLS
-        y_test: Dep variable - test data
-        x_test: Covariates - test data
-
-    Returns:
-        Returns tuple with RMSE and tstat from ttest
-    """
-    # Fit model and get predicted values of test data
-    mod = sm.WLS(y_train, x_train, weights=weights).fit()
-    pred = mod.predict(x_test)
-
-    #Get residuals from test data
-    res = (y_test[:] - pred.values)
-
-    # Calculate ttest to check residuals from test and train are independent
-    t_stat = stats.ttest_ind(mod.resid, res, equal_var=False)[0]
-
-    # Return RMSE and t-stat from ttest
-    return (np.sqrt(np.mean(res**2)), t_stat)
 
 def gc_kfold_cv(data, group, begin, end):
     """
@@ -131,6 +111,34 @@ def gc_kfold_cv(data, group, begin, end):
         dfs[val] = tsets[i]
 
     return dfs
+
+def felm_rmse(y_train, x_train, weights, y_test, x_test):
+    """
+    Estimate WLS from y_train, x_train, predict using x_test, calculate RMSE,
+    and test whether residuals are independent.
+
+    Arguments:
+        y_train: Dep variable - Full or training data
+        x_train: Covariates - Full or training data
+        weights: Weights for WLS
+        y_test: Dep variable - test data
+        x_test: Covariates - test data
+
+    Returns:
+        Returns tuple with RMSE and tstat from ttest
+    """
+    # Fit model and get predicted values of test data
+    mod = sm.WLS(y_train, x_train, weights=weights).fit()
+    pred = mod.predict(x_test)
+
+    #Get residuals from test data
+    res = (y_test[:] - pred.values)
+
+    # Calculate ttest to check residuals from test and train are independent
+    t_stat = stats.ttest_ind(mod.resid, res, equal_var=False)[0]
+
+    # Return RMSE and t-stat from ttest
+    return (np.sqrt(np.mean(res**2)), t_stat)
 
 def felm_cv(regdata, group):
     """

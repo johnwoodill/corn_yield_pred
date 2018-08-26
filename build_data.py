@@ -41,11 +41,11 @@ cropdat['county_ansi'] = cropdat.county_ansi.astype(int)
 cropdat['year'] = cropdat.year.astype(int)
 cropdat['county_ansi'] = cropdat.county_ansi.astype(str).str.zfill(3)
 cropdat['fips'] = cropdat.state_ansi.map(str) + cropdat.county_ansi.map(str)
-cropdat = cropdat.drop(['state_ansi', 'county_ansi', 'state'], 1)
+cropdat = cropdat.drop(['state_ansi', 'county_ansi'], 1)
 
-cropdat = cropdat.pivot_table(index = ['year', 'fips'], columns = 'data_item', values = 'value')
+cropdat = cropdat.pivot_table(index = ['year', 'fips', 'state'], columns = 'data_item', values = 'value')
 cropdat = cropdat.reset_index()
-cropdat.columns = ['year', 'fips', 'corn_acres', 'corn_yield']
+cropdat.columns = ['year', 'fips', 'state', 'corn_acres', 'corn_yield']
 cropdat['fips'] = cropdat['fips'].astype(str)
 cropdat['year'] = cropdat['year'].astype(str)
 
@@ -60,6 +60,17 @@ cropdat = cropdat.merge(dday, how = 'left', on = ['fips', 'year'])
 # Trend
 cropdat['trend'] = cropdat['year'].astype(int) - 1979
 cropdat['trend_sq'] = cropdat['trend']**2
+
+# State Trends
+state_trend = pd.get_dummies(cropdat.state)
+cropdat = pd.concat([cropdat, state_trend], axis=1)
+cropdat['IOWA_trend'] = cropdat['IOWA']*cropdat['trend']
+cropdat['INDIANA_trend'] = cropdat['INDIANA']*cropdat['trend']
+cropdat['ILLINOIS_trend'] = cropdat['ILLINOIS']*cropdat['trend']
+
+cropdat['IOWA_trend_sq'] = cropdat['IOWA']*cropdat['trend_sq']
+cropdat['INDIANA_trend_sq'] = cropdat['INDIANA']*cropdat['trend_sq']
+cropdat['ILLINOIS_trend_sq'] = cropdat['ILLINOIS']*cropdat['trend_sq']
 
 # Quad precipitation
 cropdat['prec_sq'] = cropdat['prec']**2
