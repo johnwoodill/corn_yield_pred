@@ -62,15 +62,15 @@ cropdat['trend'] = cropdat['year'].astype(int) - 1979
 cropdat['trend_sq'] = cropdat['trend']**2
 
 # State Trends
-state_trend = pd.get_dummies(cropdat.state)
-cropdat = pd.concat([cropdat, state_trend], axis=1)
-cropdat['IOWA_trend'] = cropdat['IOWA']*cropdat['trend']
-cropdat['INDIANA_trend'] = cropdat['INDIANA']*cropdat['trend']
-cropdat['ILLINOIS_trend'] = cropdat['ILLINOIS']*cropdat['trend']
+#state_trend = pd.get_dummies(cropdat.state)
+#cropdat = pd.concat([cropdat, state_trend], axis=1)
+#cropdat['IOWA_trend'] = cropdat['IOWA']*cropdat['trend']
+#cropdat['INDIANA_trend'] = cropdat['INDIANA']*cropdat['trend']
+#cropdat['ILLINOIS_trend'] = cropdat['ILLINOIS']*cropdat['trend']
 
-cropdat['IOWA_trend_sq'] = cropdat['IOWA']*cropdat['trend_sq']
-cropdat['INDIANA_trend_sq'] = cropdat['INDIANA']*cropdat['trend_sq']
-cropdat['ILLINOIS_trend_sq'] = cropdat['ILLINOIS']*cropdat['trend_sq']
+#cropdat['IOWA_trend_sq'] = cropdat['IOWA']*cropdat['trend_sq']
+#cropdat['INDIANA_trend_sq'] = cropdat['INDIANA']*cropdat['trend_sq']
+#cropdat['ILLINOIS_trend_sq'] = cropdat['ILLINOIS']*cropdat['trend_sq']
 
 # Quad precipitation
 cropdat['prec_sq'] = cropdat['prec']**2
