@@ -31,55 +31,7 @@ import statsmodels.api as sm
 
 print("Defining functions......")
 
-def main():
-    """
-    Estimate baseline and degree day regression.
-
-    Returns:
-        data.frame with RMSE, SE, and tstats
-    """
-    # Download remote from github
-    print("Downloading custom data set from: ")
-    print("https://github.com/johnwoodill/corn_yield_pred/raw/master/data/full_data.pickle")
-    file_url = "https://github.com/johnwoodill/corn_yield_pred/raw/master/data/full_data.pickle"
-    request.urlretrieve(file_url, "full_data.pickle")
-    cropdat = pd.read_pickle("full_data.pickle")
-
-    # Baseline WLS Regression Cross-Validation with FE and trends
-    print("Estimating Baseline Regression")
-    basedat = cropdat[['ln_corn_yield', 'trend', 'trend_sq', 'corn_acres']]
-    fe_group = pd.get_dummies(cropdat.fips)
-    regdat = pd.concat([basedat, fe_group], axis=1)
-    base_rmse, base_se, base_tstat = felm_cv(regdat, cropdat['trend'])
-
-    # Degree Day Regression Cross-Validation
-    print("Estimating Degree Day Regression")
-    dddat = cropdat[['ln_corn_yield', 'dday0_10C', 'dday10_30C', 'dday30C',
-                     'prec', 'prec_sq', 'trend', 'trend_sq', 'corn_acres']]
-    fe_group = pd.get_dummies(cropdat.fips)
-    regdat = pd.concat([dddat, fe_group], axis=1)
-    ddreg_rmse, ddreg_se, ddreg_tstat = felm_cv(regdat, cropdat['trend'])
-
-    print("Estimating Degree Day Regression with State Trends")
-    sdat = cropdat[['ln_corn_yield', 'dday0_10C', 'dday10_30C', 'dday30C',
-                     'prec', 'prec_sq', 'IOWA_trend', 'INDIANA_trend',
-                     'ILLINOIS_trend', 'IOWA_trend_sq', 'INDIANA_trend_sq',
-                     'ILLINOIS_trend_sq', 'corn_acres']]
-    fe_group = pd.get_dummies(cropdat.fips)
-    regdat = pd.concat([sdat, fe_group], axis=1)
-    ddreg_st_rmse, ddreg_st_se, ddreg_st_tstat = felm_cv(regdat, cropdat['trend'])
-
-    # Get results as data.frame
-    fdat = {'Regression': ['Baseline', 'Degree Day', 'Degree Day - State Trend'],
-            'RMSE': [base_rmse, ddreg_rmse, ddreg_st_rmse],
-            'se': [base_se, ddreg_se, ddreg_st_se],
-            't-stat': [base_tstat, ddreg_tstat, ddreg_st_tstat]}
-
-    fdat = pd.DataFrame(fdat, columns=['Regression', 'RMSE', 'se', 't-stat'])
-
-    # Calculate percentage change
-    fdat['change'] = (fdat['RMSE'] - fdat['RMSE'].iloc[0])/fdat['RMSE'].iloc[0]
-    return fdat
+  
 
 def gc_kfold_cv(data, group, begin, end):
     """
@@ -179,18 +131,50 @@ def felm_cv(regdata, group):
         if j == 27:
             return (np.mean(retrmse), np.std(retrmse), np.mean(t_stat))
 
-if __name__ == "__main__":
-    RDAT = main()
-    print(RDAT)
+#--------------------------------------------
+#Estimate baseline and degree day regression.
 
-    # print results
-    print("---Results--------------------------------------------")
-    print("Baseline: ", round(RDAT.iloc[0, 1], 2), "(RMSE)",
-          round(RDAT.iloc[0, 2], 2), "(se)",
-          round(RDAT.iloc[0, 1], 3), "(t-stat)")
-    print("Degree Day: ", round(RDAT.iloc[1, 1], 2), "(RMSE)",
-          round(RDAT.iloc[0, 2], 2), "(se)",
-          round(RDAT.iloc[1, 3], 2), "(t-stat)")
-    print("------------------------------------------------------")
-    print("% Change from Baseline: ", round(RDAT.iloc[1, 4], 4)*100, "%")
-    print("------------------------------------------------------")
+# Download remote from github
+print("Downloading custom data set from: ")
+print("https://github.com/johnwoodill/corn_yield_pred/raw/master/data/full_data.pickle")
+file_url = "https://github.com/johnwoodill/corn_yield_pred/raw/master/data/full_data.pickle"
+request.urlretrieve(file_url, "full_data.pickle")
+cropdat = pd.read_pickle("full_data.pickle")
+
+# Baseline WLS Regression Cross-Validation with FE and trends
+print("Estimating Baseline Regression")
+basedat = cropdat[['ln_corn_yield', 'trend', 'trend_sq', 'corn_acres']]
+fe_group = pd.get_dummies(cropdat.fips)
+regdat = pd.concat([basedat, fe_group], axis=1)
+base_rmse, base_se, base_tstat = felm_cv(regdat, cropdat['trend'])
+
+# Degree Day Regression Cross-Validation
+print("Estimating Degree Day Regression")
+dddat = cropdat[['ln_corn_yield', 'dday0_10C', 'dday10_30C', 'dday30C',
+                    'prec', 'prec_sq', 'trend', 'trend_sq', 'corn_acres']]
+fe_group = pd.get_dummies(cropdat.fips)
+regdat = pd.concat([dddat, fe_group], axis=1)
+ddreg_rmse, ddreg_se, ddreg_tstat = felm_cv(regdat, cropdat['trend'])
+
+# Get results as data.frame
+fdat = {'Regression': ['Baseline', 'Degree Day'],
+        'RMSE': [base_rmse, ddreg_rmse],
+        'se': [base_se, ddreg_se],
+        't-stat': [base_tstat, ddreg_tstat]}
+
+fdat = pd.DataFrame(fdat, columns=['Regression', 'RMSE', 'se', 't-stat'])
+
+# Calculate percentage change
+fdat['change'] = (fdat['RMSE'] - fdat['RMSE'].iloc[0])/fdat['RMSE'].iloc[0]
+
+# print results
+print("---Results--------------------------------------------")
+print("Baseline: ", round(fdat.iloc[0, 1], 2), "(RMSE)",
+        round(fdat.iloc[0, 2], 2), "(se)",
+        round(fdat.iloc[0, 1], 3), "(t-stat)")
+print("Degree Day: ", round(fdat.iloc[1, 1], 2), "(RMSE)",
+        round(fdat.iloc[0, 2], 2), "(se)",
+        round(fdat.iloc[1, 3], 2), "(t-stat)")
+print("------------------------------------------------------")
+print("% Change from Baseline: ", round(fdat.iloc[1, 4], 4)*100, "%")
+print("------------------------------------------------------")
