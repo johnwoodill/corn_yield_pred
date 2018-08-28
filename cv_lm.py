@@ -3,11 +3,12 @@
 Code Summary:
 
 This script uses a custom data set to cross-validate a baseline regression that
-estimates corn yields with fixed effects and trends. A second regression is
-cross-validated that includes degree days and precipitation to show
-percentage change improvements in RMSE from baseline. Additionally, a custom
-function splits data group into clusters of 5 years. A t-test is used to
-validate the residual errors are independent between test and train data.
+estimates corn yields with fixed effects and aggregate trends. A second 
+regression is cross-validated that includes degree days and precipitation to 
+show percentage change improvements in RMSE from baseline. The cross-validation
+method splits data groups into clusters of 5 years to test (e.g. 1980-1984) and
+the remaining are used to train the model. A t-test is used to validate the 
+residual errors are independent between test and train data splits.
 
 Data description:
 
@@ -15,13 +16,15 @@ Corn yield data was downloaded from NASS between 1980-2010 for the US corn belt
 states: Indiana, Illinois, Iowa. Temperature data -- degree days and precip --
 are provided from Schlenker and Roberts (2009).
 
-URL: "https://github.com/johnwoodill/corn_yield_pred/raw/master/data/full_data.pickle"
+Data URL: 
+
+"https://github.com/johnwoodill/corn_yield_pred/raw/master/data/full_data.pickle"
 
 Example:
     The data is automatically downloaded and processed within the script,
     so a simple python call is all that is needed.
 
-    $ python cv_lm.py
+    $ python3 cv_lm.py
 """
 from urllib import request
 from scipy import stats
@@ -30,8 +33,6 @@ import numpy as np
 import statsmodels.api as sm
 
 print("Defining functions......")
-
-  
 
 def gc_kfold_cv(data, group, begin, end):
     """
@@ -59,8 +60,8 @@ def gc_kfold_cv(data, group, begin, end):
     tsets = [train, test]
 
     # Combine train and test to return dfs
-    for i, val in enumerate([1, 2]):
-        dfs[val] = tsets[i]
+    for val in range(2):  
+        dfs[val + 1] = tsets[val]
 
     return dfs
 
@@ -128,8 +129,8 @@ def felm_cv(regdata, group):
         rettstat.append(t_stat)
 
         # If end of loop return mean RMSE, s.e., and tstat
-        if j == 27:
-            return (np.mean(retrmse), np.std(retrmse), np.mean(t_stat))
+        
+    return (np.mean(retrmse), np.std(retrmse), np.mean(t_stat))
 
 #--------------------------------------------
 #Estimate baseline and degree day regression.
@@ -151,7 +152,7 @@ base_rmse, base_se, base_tstat = felm_cv(regdat, cropdat['trend'])
 # Degree Day Regression Cross-Validation
 print("Estimating Degree Day Regression")
 dddat = cropdat[['ln_corn_yield', 'dday0_10C', 'dday10_30C', 'dday30C',
-                    'prec', 'prec_sq', 'trend', 'trend_sq', 'corn_acres']]
+                 'prec', 'prec_sq', 'trend', 'trend_sq', 'corn_acres']]
 fe_group = pd.get_dummies(cropdat.fips)
 regdat = pd.concat([dddat, fe_group], axis=1)
 ddreg_rmse, ddreg_se, ddreg_tstat = felm_cv(regdat, cropdat['trend'])
@@ -171,9 +172,9 @@ fdat['change'] = (fdat['RMSE'] - fdat['RMSE'].iloc[0])/fdat['RMSE'].iloc[0]
 print("---Results--------------------------------------------")
 print("Baseline: ", round(fdat.iloc[0, 1], 2), "(RMSE)",
         round(fdat.iloc[0, 2], 2), "(se)",
-        round(fdat.iloc[0, 1], 3), "(t-stat)")
+        round(fdat.iloc[0, 3], 2), "(t-stat)")
 print("Degree Day: ", round(fdat.iloc[1, 1], 2), "(RMSE)",
-        round(fdat.iloc[0, 2], 2), "(se)",
+        round(fdat.iloc[1, 2], 2), "(se)",
         round(fdat.iloc[1, 3], 2), "(t-stat)")
 print("------------------------------------------------------")
 print("% Change from Baseline: ", round(fdat.iloc[1, 4], 4)*100, "%")
